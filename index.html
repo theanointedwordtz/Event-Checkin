@@ -74,7 +74,8 @@
     <div class="card">
       <h2>Scan QR code</h2>
       <div id="qr-reader" style="width:100%;"></div>
-      <p class="description">Allow camera access when prompted.</p>
+      <p class="description">Allow camera access when prompted. The camera pauses after each scan - tap "Scan next guest" or wait a few seconds for it to resume on its own.</p>
+      <button id="btn-scan-next" style="display:none;background:#25D366;">Scan next guest</button>
     </div>
 
     <div class="card">
@@ -181,10 +182,15 @@
     el.innerHTML = '<table><thead><tr><th>Time</th><th>Code</th><th>Guest(s)</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
 
-  function performCheckin(code) {
+  function performCheckin(code, fromCamera) {
     code = (code || '').trim().toUpperCase();
     if (!code) return;
     if (!hasSettings()) { showSettings(); return; }
+
+    if (fromCamera && qrInstance) {
+      try { qrInstance.pause(true); } catch (e) {}
+      document.getElementById('btn-scan-next').style.display = 'block';
+    }
 
     callAppsScript('checkin', { inviteCode: code }).then(function (res) {
       var payload = res && res.ok ? res.result : res;
@@ -198,13 +204,33 @@
         var reason = payload && payload.message ? payload.message : (res && res.error) || 'Invite code not recognized';
         showResult(false, code, reason);
       }
+      if (fromCamera) scheduleAutoResume();
     }).catch(function (err) {
       showResult(false, code, 'Network/connection error: ' + err.message);
+      if (fromCamera) scheduleAutoResume();
     });
   }
 
+  var AUTO_RESUME_DELAY_MS = 3000;
+  var resumeTimer = null;
+
+  function scheduleAutoResume() {
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(resumeScanning, AUTO_RESUME_DELAY_MS);
+  }
+
+  function resumeScanning() {
+    clearTimeout(resumeTimer);
+    document.getElementById('btn-scan-next').style.display = 'none';
+    if (qrInstance) {
+      try { qrInstance.resume(); } catch (e) {}
+    }
+  }
+
+  document.getElementById('btn-scan-next').addEventListener('click', resumeScanning);
+
   document.getElementById('btn-manual-checkin').addEventListener('click', function () {
-    performCheckin(document.getElementById('manual-code').value);
+    performCheckin(document.getElementById('manual-code').value, false);
     document.getElementById('manual-code').value = '';
     document.getElementById('manual-code').focus();
   });
@@ -213,7 +239,14 @@
   });
 
   // ---------- camera scanner ----------
-  var lastScanned = null, lastScanTime = 0, scannerStarted = false;
+  // No time-based debounce needed anymore - pausing the camera after every
+  // scan (above) means it physically can't decode anything until resumed,
+  // which is what actually prevents an accidental double-count for a double
+  // invite (the old 4-second timer could still fire again if the code sat
+  // in view longer than that). Re-scanning the SAME code after resuming is
+  // intentional and correct - that's how the second guest of a double invite
+  // gets checked in.
+  var qrInstance = null, scannerStarted = false;
   function startScannerIfNeeded() {
     if (scannerStarted || !hasSettings()) return;
     scannerStarted = true;
@@ -221,7 +254,7 @@
       document.getElementById('qr-reader').innerHTML = '<p class="msg bad">QR scanner library failed to load. Use manual entry instead.</p>';
       return;
     }
-    var qr = new Html5Qrcode('qr-reader');
+    qrInstance = new Html5Qrcode('qr-reader');
     Html5Qrcode.getCameras().then(function (cameras) {
       if (!cameras || !cameras.length) {
         document.getElementById('qr-reader').innerHTML = '<p class="msg bad">No camera found. Use manual entry instead.</p>';
@@ -229,11 +262,8 @@
       }
       var chosen = cameras.find(function (c) { return /back|rear|environment/i.test(c.label); });
       var cameraId = chosen ? chosen.id : cameras[cameras.length - 1].id;
-      qr.start(cameraId, { fps: 10, qrbox: 250 }, function (decodedText) {
-        var now = Date.now();
-        if (decodedText === lastScanned && (now - lastScanTime) < 4000) return;
-        lastScanned = decodedText; lastScanTime = now;
-        performCheckin(decodedText);
+      qrInstance.start(cameraId, { fps: 10, qrbox: 250 }, function (decodedText) {
+        performCheckin(decodedText, true);
       }, function () {});
     }).catch(function () {
       document.getElementById('qr-reader').innerHTML = '<p class="msg bad">Could not access camera. Use manual entry instead.</p>';
