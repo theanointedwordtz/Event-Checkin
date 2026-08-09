@@ -3,101 +3,118 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wedding Check-in Scanner</title>
+<title>Share Your Testimony - Anointed Word</title>
 <style>
   * { box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    margin: 0; background: #f3f2f1; color: #1d2327;
-  }
-  header {
-    background: #1d2327; color: #fff; padding: 16px 20px;
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
-  }
-  header h1 { font-size: 18px; margin: 0; }
-  header a { color: #cbd0d3; font-size: 13px; }
-  main { max-width: 480px; margin: 0 auto; padding: 16px; }
-  .card {
-    background: #fff; border: 1px solid #dcdcde; border-radius: 8px;
-    padding: 20px; margin-bottom: 16px;
-  }
-  h2 { margin-top: 0; font-size: 16px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: #f3f2f1; color: #1d2327; }
+  header { background: #1d2327; color: #fff; padding: 20px; text-align: center; }
+  header h1 { font-size: 20px; margin: 0; }
+  header p { font-size: 13px; color: #cbd0d3; margin: 6px 0 0; }
+  main { max-width: 480px; margin: 0 auto; padding: 20px 16px 60px; }
+  .card { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  h2 { margin-top: 0; font-size: 17px; }
   label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
-  input[type=text], input[type=url], input[type=password] {
-    width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px;
-  }
-  button {
-    background: #1d2327; color: #fff; border: none; padding: 10px 18px;
-    border-radius: 6px; font-size: 14px; cursor: pointer; margin-top: 12px; width: 100%;
-  }
-  button:disabled { opacity: .5; }
-  .description { color: #666; font-size: 12px; margin-top: 6px; }
-  .msg { margin-top: 10px; font-size: 13px; }
+  textarea, input[type=text] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
+  textarea { resize: vertical; }
+  button { background: #1d2327; color: #fff; border: none; padding: 12px 18px; border-radius: 6px; font-size: 15px; cursor: pointer; margin-top: 12px; width: 100%; }
+  button.secondary { background: #e2e4e7; color: #1d2327; }
+  button:disabled { background: #ccc; cursor: default; }
+  .word-count { font-size: 12px; color: #666; text-align: right; margin-top: 4px; }
+  .word-count.over { color: #d63638; font-weight: 600; }
+  .msg { margin-top: 10px; font-size: 13px; white-space: pre-line; }
   .msg.bad { color: #d63638; }
   .msg.ok { color: #00a32a; }
-  #result {
-    display: none; margin: 16px 0; padding: 20px; border-radius: 8px; align-items: center; gap: 16px;
-  }
-  #result.ok, #result.bad { display: flex; }
-  #result.ok { background: #edfaef; border: 2px solid #00a32a; }
-  #result.bad { background: #fcf0f1; border: 2px solid #d63638; }
-  #result .icon { font-size: 36px; font-weight: bold; }
-  #result.ok .icon { color: #00a32a; }
-  #result.bad .icon { color: #d63638; }
-  #manual-code { font-size: 18px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
-  th { color: #666; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  .description { color: #666; font-size: 12px; margin: 2px 0 8px; }
+  .part-item { border: 1px solid #eee; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; position: relative; }
+  .part-item .part-num { font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+  .part-item .remove-part { position: absolute; top: 8px; right: 10px; color: #d63638; text-decoration: none; font-size: 12px; }
+  #screen-success { display: none; }
+  #screen-success.active { display: block; }
+  #screen-form.hidden { display: none; }
+
+  /* Permanent ad slideshow block - always visible, cycles through
+     every active sponsor message, never gates access to the form. Shows
+     a friendly placeholder when there's nothing active to show. */
+  .ad-slideshow { padding: 0; overflow: hidden; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ad-slide-image { width: 100%; display: block; border-radius: 8px 8px 0 0; cursor: default; }
+  .ad-slide-caption { padding: 12px 16px; font-size: 14px; font-weight: 600; color: #1d2327; margin: 0; width: 100%; background: #f7f7f5; text-align: center; }
+  .ad-slide-dots { text-align: center; padding: 8px 0 12px; }
+  .ad-slide-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ccc; margin: 0 3px; }
+  .ad-slide-dots span.on { background: #1d2327; }
+  .ad-slide-empty { padding: 20px; text-align: center; color: #999; font-size: 13px; width: 100%; margin: 0; }
 </style>
 </head>
 <body>
-
 <header>
-  <h1>&#128247; Check-in Scanner</h1>
-  <a href="#" id="btn-settings">Settings</a>
+  <h1>&#10013; Share Your Testimony</h1>
+  <p>Anointed Word - Events</p>
 </header>
-
 <main>
 
-  <div class="card" id="settings-card" style="display:none;">
-    <h2>Connect to your Wedding RSVP backend</h2>
-    <label>Apps Script Web App URL</label>
-    <input type="url" id="cfg-url" placeholder="https://script.google.com/macros/s/XXXXX/exec">
-    <label>Shared Secret</label>
-    <input type="password" id="cfg-secret" placeholder="Same as API_SECRET in Script Properties">
-    <p class="description">Both are saved only on this device (never uploaded anywhere else). Get the URL from Apps Script &gt; Deploy &gt; Manage deployments. The secret must exactly match <code>API_SECRET</code> in Script Properties.</p>
-    <button id="btn-save-settings">Save</button>
-    <div class="msg" id="settings-msg"></div>
+  <div class="card ad-slideshow" id="ad-slideshow-top"></div>
+
+  <div class="card" id="screen-form">
+    <h2>Tell your story</h2>
+    <p class="description">Write in as many parts as you need (up to 17), 300 words or fewer each. Your testimony is shared anonymously unless you choose to leave contact info below.</p>
+
+    <label>Your story - part <span id="current-part-num">1</span></label>
+    <textarea id="part-text" rows="8" placeholder="Write here..."></textarea>
+    <div class="word-count" id="word-count">0 / 300 words</div>
+    <button class="secondary" id="btn-save-part">Save this part &amp; write another</button>
+
+    <div id="saved-parts"></div>
+
+    <label>Contact info (optional - only if you'd like us to be able to reach you)</label>
+    <input type="text" id="contact-info" placeholder="Email or phone number">
+
+    <button id="btn-submit-testimony">Submit my testimony</button>
+    <div class="msg" id="submit-msg"></div>
   </div>
 
-  <div id="scanner-area">
-    <div class="card">
-      <h2>Scan QR code</h2>
-      <div id="qr-reader" style="width:100%;"></div>
-      <p class="description">Allow camera access when prompted. The camera pauses after each scan - tap "Scan next guest" or wait a few seconds for it to resume on its own.</p>
-      <button id="btn-scan-next" style="display:none;background:#25D366;">Scan next guest</button>
-    </div>
+  <div class="card ad-slideshow" id="ad-slideshow-bottom"></div>
 
-    <div class="card">
-      <h2>Or enter invite number</h2>
-      <input type="text" id="manual-code" placeholder="e.g. INV00042">
-      <button id="btn-manual-checkin">Check in</button>
-    </div>
-
-    <div id="result"></div>
-
-    <div class="card">
-      <h2>Recent check-ins (this device)</h2>
-      <div id="recent">-</div>
-    </div>
+  <div class="card" id="screen-success">
+    <h2>&#10003; Thank you</h2>
+    <p>Your testimony has been received. Thank you for sharing your story with us.</p>
   </div>
 
 </main>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function () {
-  var recentCheckins = [];
+  // ---------- CONFIG ----------
+  // Your deployed Apps Script Web App URL (the .../exec one) - update
+  // this if you ever redeploy and get a new URL. No secret/API key goes
+  // here - submitTestimony/getActiveSponsorMessages are deliberately
+  // public actions on the backend (see Code.gs), so there's nothing
+  // sensitive in this file, safe to host publicly on GitHub Pages.
+  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyqR-GIHgXZZiNh60BicrmapxxeV5lVvRim1D5gPF24Amvo8dVrc1_OWYgdpjiidAf6/exec';
+
+  var MAX_PARTS = 17;
+  var MAX_WORDS = 300;
+  var savedParts = [];
+  var SLIDE_INTERVAL_MS = 5000;
+
+  // text/plain avoids a CORS preflight (OPTIONS) request, which Apps
+  // Script's web app doesn't handle - the backend still reads and
+  // JSON.parses the raw body correctly regardless of the declared
+  // content-type.
+  function callApi(action, data, onSuccess, onError) {
+    fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: action, data: data || {} })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        if (json.ok) onSuccess(json.result);
+        else onError(new Error(json.error || 'Something went wrong.'));
+      })
+      .catch(function (err) { onError(err); });
+  }
+
+  function countWords(text) {
+    return (text || '').trim().split(/\s+/).filter(Boolean).length;
+  }
 
   function escapeHtml(str) {
     return String(str || '').replace(/[&<>"']/g, function (c) {
@@ -105,179 +122,125 @@
     });
   }
 
-  // ---------- settings ----------
-  function getSettings() {
-    return {
-      url: localStorage.getItem('wrm_scanner_url') || '',
-      secret: localStorage.getItem('wrm_scanner_secret') || ''
-    };
-  }
-  function hasSettings() {
-    var s = getSettings();
-    return !!(s.url && s.secret);
-  }
-  function showSettings() {
-    var s = getSettings();
-    document.getElementById('cfg-url').value = s.url;
-    document.getElementById('cfg-secret').value = s.secret;
-    document.getElementById('settings-card').style.display = 'block';
-    document.getElementById('scanner-area').style.display = hasSettings() ? 'block' : 'none';
-  }
-  function hideSettings() {
-    document.getElementById('settings-card').style.display = 'none';
-    document.getElementById('scanner-area').style.display = 'block';
-  }
-
-  document.getElementById('btn-settings').addEventListener('click', function (e) {
-    e.preventDefault();
-    showSettings();
-  });
-
-  document.getElementById('btn-save-settings').addEventListener('click', function () {
-    var url = document.getElementById('cfg-url').value.trim();
-    var secret = document.getElementById('cfg-secret').value.trim();
-    var msg = document.getElementById('settings-msg');
-    if (!url || !secret) { msg.className = 'msg bad'; msg.textContent = 'Both fields are required.'; return; }
-    localStorage.setItem('wrm_scanner_url', url);
-    localStorage.setItem('wrm_scanner_secret', secret);
-    msg.className = 'msg ok'; msg.textContent = 'Saved.';
-    setTimeout(function () {
-      msg.textContent = '';
-      hideSettings();
-      startScannerIfNeeded();
-    }, 600);
-  });
-
-  // ---------- calling the Apps Script JSON API ----------
-  // Content-Type is deliberately "text/plain" (not "application/json") so the
-  // browser treats this as a "simple request" and skips the CORS preflight -
-  // Apps Script Web Apps don't reliably handle preflight OPTIONS requests.
-  // The body is still valid JSON; Code.gs parses e.postData.contents as JSON
-  // regardless of the declared content type, so no server-side change is needed.
-  function callAppsScript(action, data) {
-    var s = getSettings();
-    return fetch(s.url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, secret: s.secret, data: data || {} })
-    }).then(function (res) { return res.json(); });
-  }
-
-  // ---------- check-in ----------
-  function showResult(ok, title, subtitle) {
-    var el = document.getElementById('result');
-    el.className = ok ? 'ok' : 'bad';
-    el.innerHTML = '<div class="icon">' + (ok ? '&#10003;' : '&#10007;') + '</div>' +
-      '<div><div style="font-size:19px;font-weight:600;">' + escapeHtml(title) + '</div>' +
-      '<div style="color:#666;margin-top:4px;">' + escapeHtml(subtitle) + '</div></div>';
-    if (navigator.vibrate) navigator.vibrate(ok ? 80 : [80, 60, 80]);
-  }
-
-  function renderRecent() {
-    var el = document.getElementById('recent');
-    if (!recentCheckins.length) { el.innerHTML = '<em>No check-ins yet.</em>'; return; }
-    var rows = recentCheckins.slice(0, 15).map(function (r) {
-      return '<tr><td>' + escapeHtml(r.time) + '</td><td>' + escapeHtml(r.code) + '</td><td>' + escapeHtml(r.names) + '</td></tr>';
-    }).join('');
-    el.innerHTML = '<table><thead><tr><th>Time</th><th>Code</th><th>Guest(s)</th></tr></thead><tbody>' + rows + '</tbody></table>';
-  }
-
-  function performCheckin(code, fromCamera) {
-    code = (code || '').trim().toUpperCase();
-    if (!code) return;
-    if (!hasSettings()) { showSettings(); return; }
-
-    if (fromCamera && qrInstance) {
-      try { qrInstance.pause(true); } catch (e) {}
-      document.getElementById('btn-scan-next').style.display = 'block';
-    }
-
-    callAppsScript('checkin', { inviteCode: code }).then(function (res) {
-      var payload = res && res.ok ? res.result : res;
-      if (payload && payload.ok) {
-        var inv = payload.invitee;
-        var names = inv.name2 ? (inv.name1 + ' & ' + inv.name2) : inv.name1;
-        showResult(true, names, payload.message);
-        recentCheckins.unshift({ code: code, names: names, time: new Date().toLocaleTimeString() });
-        renderRecent();
-      } else {
-        var reason = payload && payload.message ? payload.message : (res && res.error) || 'Invite code not recognized';
-        showResult(false, code, reason);
-      }
-      if (fromCamera) scheduleAutoResume();
-    }).catch(function (err) {
-      showResult(false, code, 'Network/connection error: ' + err.message);
-      if (fromCamera) scheduleAutoResume();
-    });
-  }
-
-  var AUTO_RESUME_DELAY_MS = 3000;
-  var resumeTimer = null;
-
-  function scheduleAutoResume() {
-    clearTimeout(resumeTimer);
-    resumeTimer = setTimeout(resumeScanning, AUTO_RESUME_DELAY_MS);
-  }
-
-  function resumeScanning() {
-    clearTimeout(resumeTimer);
-    document.getElementById('btn-scan-next').style.display = 'none';
-    if (qrInstance) {
-      try { qrInstance.resume(); } catch (e) {}
-    }
-  }
-
-  document.getElementById('btn-scan-next').addEventListener('click', resumeScanning);
-
-  document.getElementById('btn-manual-checkin').addEventListener('click', function () {
-    performCheckin(document.getElementById('manual-code').value, false);
-    document.getElementById('manual-code').value = '';
-    document.getElementById('manual-code').focus();
-  });
-  document.getElementById('manual-code').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') document.getElementById('btn-manual-checkin').click();
-  });
-
-  // ---------- camera scanner ----------
-  // No time-based debounce needed anymore - pausing the camera after every
-  // scan (above) means it physically can't decode anything until resumed,
-  // which is what actually prevents an accidental double-count for a double
-  // invite (the old 4-second timer could still fire again if the code sat
-  // in view longer than that). Re-scanning the SAME code after resuming is
-  // intentional and correct - that's how the second guest of a double invite
-  // gets checked in.
-  var qrInstance = null, scannerStarted = false;
-  function startScannerIfNeeded() {
-    if (scannerStarted || !hasSettings()) return;
-    scannerStarted = true;
-    if (typeof Html5Qrcode === 'undefined') {
-      document.getElementById('qr-reader').innerHTML = '<p class="msg bad">QR scanner library failed to load. Use manual entry instead.</p>';
+  // ---------- Non-blocking ad slideshow ----------
+  function initAdSlideshow(containerId, sponsors) {
+    var container = document.getElementById(containerId);
+    if (!sponsors || !sponsors.length) {
+      container.innerHTML = '<p class="ad-slide-empty">No ad right now - go ahead and share your testimony below!</p>';
       return;
     }
-    qrInstance = new Html5Qrcode('qr-reader');
-    Html5Qrcode.getCameras().then(function (cameras) {
-      if (!cameras || !cameras.length) {
-        document.getElementById('qr-reader').innerHTML = '<p class="msg bad">No camera found. Use manual entry instead.</p>';
-        return;
+    var index = 0;
+
+    function render() {
+      var s = sponsors[index];
+      var html = '';
+      if (s.adType === 'html' && s.htmlContent) {
+        // Admin-authored content only (never from anonymous testimony
+        // submitters) - safe to render as-is, it's trusted, not
+        // third-party input.
+        html += s.htmlContent;
+      } else {
+        if (s.imageUrl) html += '<img class="ad-slide-image" src="' + s.imageUrl + '">';
+        if (s.caption) html += '<p class="ad-slide-caption">' + escapeHtml(s.caption) + '</p>';
       }
-      var chosen = cameras.find(function (c) { return /back|rear|environment/i.test(c.label); });
-      var cameraId = chosen ? chosen.id : cameras[cameras.length - 1].id;
-      qrInstance.start(cameraId, { fps: 10, qrbox: 250 }, function (decodedText) {
-        performCheckin(decodedText, true);
-      }, function () {});
-    }).catch(function () {
-      document.getElementById('qr-reader').innerHTML = '<p class="msg bad">Could not access camera. Use manual entry instead.</p>';
-    });
+      if (sponsors.length > 1) {
+        html += '<div class="ad-slide-dots">' + sponsors.map(function (_, i) {
+          return '<span class="' + (i === index ? 'on' : '') + '"></span>';
+        }).join('') + '</div>';
+      }
+      container.innerHTML = html;
+      var img = container.querySelector('.ad-slide-image');
+      if (img && s.linkUrl) {
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', function () { window.open(s.linkUrl, '_blank'); });
+      }
+    }
+
+    render();
+    if (sponsors.length > 1) {
+      setInterval(function () {
+        index = (index + 1) % sponsors.length;
+        render();
+      }, SLIDE_INTERVAL_MS);
+    }
   }
 
-  // ---------- init ----------
-  renderRecent();
-  if (hasSettings()) {
-    hideSettings();
-    startScannerIfNeeded();
-  } else {
-    showSettings();
+  callApi('getActiveSponsorMessages', {}, function (sponsors) {
+    initAdSlideshow('ad-slideshow-top', sponsors);
+    initAdSlideshow('ad-slideshow-bottom', sponsors);
+  }, function (err) {
+    console.error('Sponsor slideshow load failed:', err);
+    initAdSlideshow('ad-slideshow-top', []);
+    initAdSlideshow('ad-slideshow-bottom', []);
+  });
+
+  // ---------- Multi-part testimony builder ----------
+  function updateWordCount() {
+    var text = document.getElementById('part-text').value;
+    var words = countWords(text);
+    var el = document.getElementById('word-count');
+    el.textContent = words + ' / ' + MAX_WORDS + ' words';
+    el.className = 'word-count' + (words > MAX_WORDS ? ' over' : '');
   }
+  document.getElementById('part-text').addEventListener('input', updateWordCount);
+
+  function renderSavedParts() {
+    var el = document.getElementById('saved-parts');
+    el.innerHTML = savedParts.map(function (p, i) {
+      return '<div class="part-item"><div class="part-num">Part ' + (i + 1) + '</div>' +
+        escapeHtml(p) + '<a href="#" class="remove-part" data-remove="' + i + '">Remove</a></div>';
+    }).join('');
+    document.getElementById('current-part-num').textContent = Math.min(savedParts.length + 1, MAX_PARTS);
+    document.getElementById('btn-save-part').style.display = savedParts.length >= MAX_PARTS ? 'none' : 'block';
+  }
+
+  document.getElementById('saved-parts').addEventListener('click', function (e) {
+    var rm = e.target.closest('[data-remove]');
+    if (!rm) return;
+    e.preventDefault();
+    savedParts.splice(Number(rm.dataset.remove), 1);
+    renderSavedParts();
+  });
+
+  document.getElementById('btn-save-part').addEventListener('click', function () {
+    var text = document.getElementById('part-text').value.trim();
+    if (!text) { alert('Write something first.'); return; }
+    if (countWords(text) > MAX_WORDS) { alert('This part is over ' + MAX_WORDS + ' words - please shorten it.'); return; }
+    if (savedParts.length >= MAX_PARTS) { alert('You have reached the maximum of ' + MAX_PARTS + ' parts.'); return; }
+    savedParts.push(text);
+    document.getElementById('part-text').value = '';
+    updateWordCount();
+    renderSavedParts();
+  });
+
+  document.getElementById('btn-submit-testimony').addEventListener('click', function () {
+    var msg = document.getElementById('submit-msg');
+    var currentText = document.getElementById('part-text').value.trim();
+    var parts = savedParts.slice();
+
+    if (currentText) {
+      if (countWords(currentText) > MAX_WORDS) { msg.className = 'msg bad'; msg.textContent = 'Your current part is over ' + MAX_WORDS + ' words - please shorten it or save it first.'; return; }
+      if (parts.length >= MAX_PARTS) { msg.className = 'msg bad'; msg.textContent = 'You have reached the maximum of ' + MAX_PARTS + ' parts - remove one before adding more.'; return; }
+      parts.push(currentText);
+    }
+
+    if (!parts.length) { msg.className = 'msg bad'; msg.textContent = 'Please write your story before submitting.'; return; }
+
+    var btn = this;
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    msg.className = 'msg'; msg.textContent = '';
+    var contactInfo = document.getElementById('contact-info').value.trim();
+
+    callApi('submitTestimony', { parts: parts, contactInfo: contactInfo }, function () {
+      document.getElementById('screen-form').classList.add('hidden');
+      document.getElementById('screen-success').classList.add('active');
+    }, function (err) {
+      btn.disabled = false; btn.textContent = 'Submit my testimony';
+      msg.className = 'msg bad'; msg.textContent = err.message;
+    });
+  });
+
+  renderSavedParts();
 })();
 </script>
 </body>
