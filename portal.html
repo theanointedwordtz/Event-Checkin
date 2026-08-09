@@ -90,19 +90,21 @@
   let currentParts = [];
   let timeLeft = AD_TIMER_SECONDS;
 
-  // --- 1. Fetch Ad Content on Load ---
-  fetch(WEB_APP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Prevents CORS preflight issues
-    body: JSON.stringify({ action: 'getPortalAd' })
-  })
+  // --- 1. Fetch Ad Content on Load (Using GET to avoid CORS issues) ---
+  fetch(WEB_APP_URL + "?action=getPortalAd")
   .then(res => res.json())
   .then(data => {
-    if (data.ok && data.result.adContent) {
+    if (data.ok && data.result && data.result.adContent) {
       document.getElementById('ad-content-box').innerHTML = data.result.adContent;
+    } else {
+      document.getElementById('ad-content-box').innerHTML = "<h3>Welcome!</h3><p>Share your story below.</p>";
     }
   })
-  .catch(err => console.error("Ad load failed", err));
+  .catch(err => {
+    console.error("Ad load failed:", err);
+    // Fallback so it doesn't get stuck on "Loading..."
+    document.getElementById('ad-content-box').innerHTML = "<h3>Welcome!</h3><p>Share your story below.</p>";
+  });
 
   // --- 2. Ad Timer Logic ---
   const timerText = document.getElementById('ad-timer');
@@ -191,6 +193,7 @@
     fetch(WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow', // Ensures it follows Apps Script redirects securely
       body: JSON.stringify({
         action: 'submitTestimony',
         data: { storyParts: currentParts }
@@ -215,5 +218,3 @@
   });
 })();
 </script>
-</body>
-</html>
