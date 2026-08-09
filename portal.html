@@ -32,9 +32,7 @@
   #screen-success.active { display: block; }
   #screen-form.hidden { display: none; }
 
-  /* Permanent ad slideshow block - always visible, cycles through
-     every active sponsor message, never gates access to the form. Shows
-     a friendly placeholder when there's nothing active to show. */
+  /* Permanent ad slideshow block */
   .ad-slideshow { padding: 0; overflow: hidden; min-height: 60px; display: flex; align-items: center; justify-content: center; }
   .ad-slide-image { width: 100%; display: block; border-radius: 8px 8px 0 0; cursor: default; }
   .ad-slide-caption { padding: 10px 16px; font-size: 13px; color: #444; margin: 0; }
@@ -89,19 +87,20 @@
   var savedParts = [];
   var SLIDE_INTERVAL_MS = 5000;
 
-  // FIXED callApi Function: Uses application/x-www-form-urlencoded to completely bypass CORS / "Failed to fetch" errors.
+  // FIXED: Removed custom headers and used URLSearchParams. 
+  // This forces the browser to treat it as a standard form, bypassing all CORS NetworkErrors.
   function callApi(action, data, onSuccess, onError) {
+    var formData = new URLSearchParams();
+    formData.append('payload', JSON.stringify({ action: action, data: data || {} }));
+
     fetch(WEB_APP_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        payload: JSON.stringify({ action: action, data: data || {} })
-      })
+      body: formData
     })
       .then(function (res) { return res.json(); })
       .then(function (json) {
         if (json.ok) onSuccess(json.result);
-        else onError(new Error(json.error || 'Something went wrong.'));
+        else onError(new Error(json.error || 'Something went wrong on the server.'));
       })
       .catch(function (err) { onError(err); });
   }
@@ -116,49 +115,21 @@
     });
   }
 
-  // ---------- Non-blocking ad slideshow ----------
-  function initAdSlideshow(containerId, sponsors) {
-    var container = document.getElementById(containerId);
-    if (!sponsors || !sponsors.length) {
-      container.innerHTML = '<p class="ad-slide-empty">No ad right now - go ahead and share your testimony below!</p>';
-      return;
+  // ---------- Ad Fetching matched to Backend ----------
+  // Updated to use 'getPortalAd' so it correctly pulls from your new Admin Dashboard Settings
+  callApi('getPortalAd', {}, function (res) {
+    var topContainer = document.getElementById('ad-slideshow-top');
+    var bottomContainer = document.getElementById('ad-slideshow-bottom');
+    
+    if (res && res.adContent) {
+      topContainer.innerHTML = res.adContent;
+      bottomContainer.innerHTML = res.adContent;
+    } else {
+      topContainer.innerHTML = '<p class="ad-slide-empty">Welcome! Go ahead and share your testimony below!</p>';
     }
-    var index = 0;
-
-    function render() {
-      var s = sponsors[index];
-      var html = '';
-      if (s.imageUrl) html += '<img class="ad-slide-image" src="' + s.imageUrl + '">';
-      if (s.caption) html += '<p class="ad-slide-caption">' + escapeHtml(s.caption) + '</p>';
-      if (sponsors.length > 1) {
-        html += '<div class="ad-slide-dots">' + sponsors.map(function (_, i) {
-          return '<span class="' + (i === index ? 'on' : '') + '"></span>';
-        }).join('') + '</div>';
-      }
-      container.innerHTML = html;
-      var img = container.querySelector('.ad-slide-image');
-      if (img && s.linkUrl) {
-        img.style.cursor = 'pointer';
-        img.addEventListener('click', function () { window.open(s.linkUrl, '_blank'); });
-      }
-    }
-
-    render();
-    if (sponsors.length > 1) {
-      setInterval(function () {
-        index = (index + 1) % sponsors.length;
-        render();
-      }, SLIDE_INTERVAL_MS);
-    }
-  }
-
-  callApi('getActiveSponsorMessages', {}, function (sponsors) {
-    initAdSlideshow('ad-slideshow-top', sponsors);
-    initAdSlideshow('ad-slideshow-bottom', sponsors);
   }, function (err) {
-    console.error('Sponsor slideshow load failed:', err);
-    initAdSlideshow('ad-slideshow-top', []);
-    initAdSlideshow('ad-slideshow-bottom', []);
+    console.error('Ad load failed:', err);
+    document.getElementById('ad-slideshow-top').innerHTML = '<p class="ad-slide-empty">Welcome! Go ahead and share your testimony below.</p>';
   });
 
   // ---------- Multi-part testimony builder ----------
@@ -218,7 +189,8 @@
     msg.className = 'msg'; msg.textContent = '';
     var contactInfo = document.getElementById('contact-info').value.trim();
 
-    callApi('submitTestimony', { parts: parts, contactInfo: contactInfo }, function () {
+    // FIXED: Updated payload to match backend expecting 'storyParts'
+    callApi('submitTestimony', { storyParts: parts, contactInfo: contactInfo }, function () {
       document.getElementById('screen-form').classList.add('hidden');
       document.getElementById('screen-success').classList.add('active');
     }, function (err) {
