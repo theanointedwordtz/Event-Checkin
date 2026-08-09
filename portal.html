@@ -25,13 +25,22 @@
   .msg.bad { color: #d63638; }
   .msg.ok { color: #00a32a; }
   .description { color: #666; font-size: 12px; margin: 2px 0 8px; }
-  .sponsor-image { width: 100%; border-radius: 6px; margin-bottom: 12px; }
-  .timer { font-size: 32px; font-weight: 700; text-align: center; margin: 16px 0; }
   .part-item { border: 1px solid #eee; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; position: relative; }
   .part-item .part-num { font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
   .part-item .remove-part { position: absolute; top: 8px; right: 10px; color: #d63638; text-decoration: none; font-size: 12px; }
-  #screen-gate, #screen-form, #screen-success { display: none; }
-  #screen-gate.active, #screen-form.active, #screen-success.active { display: block; }
+  #screen-success { display: none; }
+  #screen-success.active { display: block; }
+  #screen-form.hidden { display: none; }
+
+  /* Non-blocking ad slideshow - cycles through every active sponsor
+     message, never gates access to the form below it. */
+  .ad-slideshow { display: none; padding: 0; overflow: hidden; }
+  .ad-slideshow.has-ads { display: block; }
+  .ad-slide-image { width: 100%; display: block; border-radius: 8px 8px 0 0; cursor: default; }
+  .ad-slide-caption { padding: 10px 16px; font-size: 13px; color: #444; margin: 0; }
+  .ad-slide-dots { text-align: center; padding: 8px 0 12px; }
+  .ad-slide-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ccc; margin: 0 3px; }
+  .ad-slide-dots span.on { background: #1d2327; }
 </style>
 </head>
 <body>
@@ -41,9 +50,7 @@
 </header>
 <main>
 
-  <div class="card" id="screen-gate">
-    <div id="sponsor-content"><p class="description">Loading...</p></div>
-  </div>
+  <div class="card ad-slideshow" id="ad-slideshow-top"></div>
 
   <div class="card" id="screen-form">
     <h2>Tell your story</h2>
@@ -63,6 +70,8 @@
     <div class="msg" id="submit-msg"></div>
   </div>
 
+  <div class="card ad-slideshow" id="ad-slideshow-bottom"></div>
+
   <div class="card" id="screen-success">
     <h2>&#10003; Thank you</h2>
     <p>Your testimony has been received. Thank you for sharing your story with us.</p>
@@ -74,15 +83,15 @@
   // ---------- CONFIG ----------
   // Your deployed Apps Script Web App URL (the .../exec one) - update
   // this if you ever redeploy and get a new URL. No secret/API key goes
-  // here - submitTestimony and getActiveSponsorMessage are deliberately
+  // here - submitTestimony/getActiveSponsorMessages are deliberately
   // public actions on the backend (see Code.gs), so there's nothing
-  // sensitive in this file at all, safe to host publicly on GitHub Pages
-  // or anywhere else.
+  // sensitive in this file, safe to host publicly on GitHub Pages.
   var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbybpnMzJ44I1NTamOohSt4RLoc0LRT2a2IG3paWT7CHdPKiV2SgP7gDDl1GYtSWnFmv/exec';
 
   var MAX_PARTS = 17;
   var MAX_WORDS = 300;
   var savedParts = [];
+  var SLIDE_INTERVAL_MS = 5000;
 
   // text/plain avoids a CORS preflight (OPTIONS) request, which Apps
   // Script's web app doesn't handle - the backend still reads and
@@ -106,68 +115,52 @@
     return (text || '').trim().split(/\s+/).filter(Boolean).length;
   }
 
-  function showScreen(id) {
-    ['screen-gate', 'screen-form', 'screen-success'].forEach(function (s) {
-      document.getElementById(s).classList.toggle('active', s === id);
-    });
-  }
-
   function escapeHtml(str) {
     return String(str || '').replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
 
-  // ---------- Sponsor gate ----------
-  function startGate(sponsor) {
-    var el = document.getElementById('sponsor-content');
-    if (!sponsor) {
-      showScreen('screen-form');
-      return;
-    }
-    var waitSeconds = 8;
-    var html = '';
-    if (sponsor.imageUrl) html += '<img class="sponsor-image" src="' + sponsor.imageUrl + '">';
-    if (sponsor.caption) html += '<p>' + escapeHtml(sponsor.caption) + '</p>';
-    html += '<div class="timer" id="gate-timer">' + waitSeconds + '</div>';
-    html += '<button id="btn-continue" disabled>Continue</button>';
-    el.innerHTML = html;
+  // ---------- Non-blocking ad slideshow ----------
+  function initAdSlideshow(containerId, sponsors) {
+    var container = document.getElementById(containerId);
+    if (!sponsors || !sponsors.length) { container.classList.remove('has-ads'); return; }
+    container.classList.add('has-ads');
+    var index = 0;
 
-    if (sponsor.linkUrl) {
-      var img = el.querySelector('.sponsor-image');
-      if (img) {
+    function render() {
+      var s = sponsors[index];
+      var html = '';
+      if (s.imageUrl) html += '<img class="ad-slide-image" src="' + s.imageUrl + '">';
+      if (s.caption) html += '<p class="ad-slide-caption">' + escapeHtml(s.caption) + '</p>';
+      if (sponsors.length > 1) {
+        html += '<div class="ad-slide-dots">' + sponsors.map(function (_, i) {
+          return '<span class="' + (i === index ? 'on' : '') + '"></span>';
+        }).join('') + '</div>';
+      }
+      container.innerHTML = html;
+      var img = container.querySelector('.ad-slide-image');
+      if (img && s.linkUrl) {
         img.style.cursor = 'pointer';
-        img.addEventListener('click', function () { window.open(sponsor.linkUrl, '_blank'); });
+        img.addEventListener('click', function () { window.open(s.linkUrl, '_blank'); });
       }
     }
 
-    var remaining = waitSeconds;
-    var timerEl = document.getElementById('gate-timer');
-    var btn = document.getElementById('btn-continue');
-    var interval = setInterval(function () {
-      remaining -= 1;
-      if (remaining <= 0) {
-        clearInterval(interval);
-        timerEl.textContent = '';
-        btn.disabled = false;
-        btn.textContent = 'Continue';
-      } else {
-        timerEl.textContent = remaining;
-      }
-    }, 1000);
-
-    btn.addEventListener('click', function () { showScreen('screen-form'); });
+    render();
+    if (sponsors.length > 1) {
+      setInterval(function () {
+        index = (index + 1) % sponsors.length;
+        render();
+      }, SLIDE_INTERVAL_MS);
+    }
   }
 
-  callApi('getActiveSponsorMessage', {}, function (sponsor) {
-    console.log('Sponsor check result:', sponsor);
-    startGate(sponsor);
-    showScreen('screen-gate');
+  callApi('getActiveSponsorMessages', {}, function (sponsors) {
+    initAdSlideshow('ad-slideshow-top', sponsors);
+    initAdSlideshow('ad-slideshow-bottom', sponsors);
   }, function (err) {
-    console.error('Sponsor check failed:', err);
-    // If we can't even check for a sponsor message, don't block anyone -
-    // just let them through to the form.
-    showScreen('screen-form');
+    console.error('Sponsor slideshow load failed:', err);
+    // No ads shown if this fails - the form itself is never affected.
   });
 
   // ---------- Multi-part testimony builder ----------
@@ -228,7 +221,8 @@
     var contactInfo = document.getElementById('contact-info').value.trim();
 
     callApi('submitTestimony', { parts: parts, contactInfo: contactInfo }, function () {
-      showScreen('screen-success');
+      document.getElementById('screen-form').classList.add('hidden');
+      document.getElementById('screen-success').classList.add('active');
     }, function (err) {
       btn.disabled = false; btn.textContent = 'Submit my testimony';
       msg.className = 'msg bad'; msg.textContent = err.message;
