@@ -32,15 +32,16 @@
   #screen-success.active { display: block; }
   #screen-form.hidden { display: none; }
 
-  /* Non-blocking ad slideshow - cycles through every active sponsor
-     message, never gates access to the form below it. */
-  .ad-slideshow { display: none; padding: 0; overflow: hidden; }
-  .ad-slideshow.has-ads { display: block; }
+  /* Permanent ad slideshow block - always visible, cycles through
+     every active sponsor message, never gates access to the form. Shows
+     a friendly placeholder when there's nothing active to show. */
+  .ad-slideshow { padding: 0; overflow: hidden; min-height: 60px; display: flex; align-items: center; justify-content: center; }
   .ad-slide-image { width: 100%; display: block; border-radius: 8px 8px 0 0; cursor: default; }
   .ad-slide-caption { padding: 10px 16px; font-size: 13px; color: #444; margin: 0; }
   .ad-slide-dots { text-align: center; padding: 8px 0 12px; }
   .ad-slide-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ccc; margin: 0 3px; }
   .ad-slide-dots span.on { background: #1d2327; }
+  .ad-slide-empty { padding: 20px; text-align: center; color: #999; font-size: 13px; width: 100%; margin: 0; }
 </style>
 </head>
 <body>
@@ -124,8 +125,10 @@
   // ---------- Non-blocking ad slideshow ----------
   function initAdSlideshow(containerId, sponsors) {
     var container = document.getElementById(containerId);
-    if (!sponsors || !sponsors.length) { container.classList.remove('has-ads'); return; }
-    container.classList.add('has-ads');
+    if (!sponsors || !sponsors.length) {
+      container.innerHTML = '<p class="ad-slide-empty">No ad right now - go ahead and share your testimony below!</p>';
+      return;
+    }
     var index = 0;
 
     function render() {
@@ -160,7 +163,8 @@
     initAdSlideshow('ad-slideshow-bottom', sponsors);
   }, function (err) {
     console.error('Sponsor slideshow load failed:', err);
-    // No ads shown if this fails - the form itself is never affected.
+    initAdSlideshow('ad-slideshow-top', []);
+    initAdSlideshow('ad-slideshow-bottom', []);
   });
 
   // ---------- Multi-part testimony builder ----------
