@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share Your Testimony - Anointed Word</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: #f3f2f1; color: #1d2327; }
+  header { background: #1d2327; color: #fff; padding: 20px; text-align: center; }
+  header h1 { font-size: 20px; margin: 0; }
+  header p { font-size: 13px; color: #cbd0d3; margin: 6px 0 0; }
+  main { max-width: 480px; margin: 0 auto; padding: 20px 16px 60px; }
+  .card { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  h2 { margin-top: 0; font-size: 17px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  textarea, input[type=text] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
+  textarea { resize: vertical; }
+  button { background: #1d2327; color: #fff; border: none; padding: 12px 18px; border-radius: 6px; font-size: 15px; cursor: pointer; margin-top: 12px; width: 100%; }
+  button.secondary { background: #e2e4e7; color: #1d2327; }
+  button:disabled { background: #ccc; cursor: default; }
+  .word-count { font-size: 12px; color: #666; text-align: right; margin-top: 4px; }
+  .word-count.over { color: #d63638; font-weight: 600; }
+  .msg { margin-top: 10px; font-size: 13px; white-space: pre-line; }
+  .msg.bad { color: #d63638; }
+  .msg.ok { color: #00a32a; }
+  .description { color: #666; font-size: 12px; margin: 2px 0 8px; }
+  .sponsor-image { width: 100%; border-radius: 6px; margin-bottom: 12px; }
+  .timer { font-size: 32px; font-weight: 700; text-align: center; margin: 16px 0; }
+  .part-item { border: 1px solid #eee; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; position: relative; }
+  .part-item .part-num { font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+  .part-item .remove-part { position: absolute; top: 8px; right: 10px; color: #d63638; text-decoration: none; font-size: 12px; }
+  #screen-gate, #screen-form, #screen-success { display: none; }
+  #screen-gate.active, #screen-form.active, #screen-success.active { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>&#10013; Share Your Testimony</h1>
+  <p>Anointed Word - Events</p>
+</header>
+<main>
+
+  <div class="card" id="screen-gate">
+    <div id="sponsor-content"><p class="description">Loading...</p></div>
+  </div>
+
+  <div class="card" id="screen-form">
+    <h2>Tell your story</h2>
+    <p class="description">Write in as many parts as you need (up to 17), 300 words or fewer each. Your testimony is shared anonymously unless you choose to leave contact info below.</p>
+
+    <label>Your story - part <span id="current-part-num">1</span></label>
+    <textarea id="part-text" rows="8" placeholder="Write here..."></textarea>
+    <div class="word-count" id="word-count">0 / 300 words</div>
+    <button class="secondary" id="btn-save-part">Save this part &amp; write another</button>
+
+    <div id="saved-parts"></div>
+
+    <label>Contact info (optional - only if you'd like us to be able to reach you)</label>
+    <input type="text" id="contact-info" placeholder="Email or phone number">
+
+    <button id="btn-submit-testimony">Submit my testimony</button>
+    <div class="msg" id="submit-msg"></div>
+  </div>
+
+  <div class="card" id="screen-success">
+    <h2>&#10003; Thank you</h2>
+    <p>Your testimony has been received. Thank you for sharing your story with us.</p>
+  </div>
+
+</main>
+<script>
+(function () {
+  // ---------- CONFIG ----------
+  // Your deployed Apps Script Web App URL (the .../exec one) - update
+  // this if you ever redeploy and get a new URL. No secret/API key goes
+  // here - submitTestimony and getActiveSponsorMessage are deliberately
+  // public actions on the backend (see Code.gs), so there's nothing
+  // sensitive in this file at all, safe to host publicly on GitHub Pages
+  // or anywhere else.
+  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbybpnMzJ44I1NTamOohSt4RLoc0LRT2a2IG3paWT7CHdPKiV2SgP7gDDl1GYtSWnFmv/exec';
+
+  var MAX_PARTS = 17;
+  var MAX_WORDS = 300;
+  var savedParts = [];
+
+  // text/plain avoids a CORS preflight (OPTIONS) request, which Apps
+  // Script's web app doesn't handle - the backend still reads and
+  // JSON.parses the raw body correctly regardless of the declared
+  // content-type.
+  function callApi(action, data, onSuccess, onError) {
+    fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: action, data: data || {} })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        if (json.ok) onSuccess(json.result);
+        else onError(new Error(json.error || 'Something went wrong.'));
+      })
+      .catch(function (err) { onError(err); });
+  }
+
+  function countWords(text) {
+    return (text || '').trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  function showScreen(id) {
+    ['screen-gate', 'screen-form', 'screen-success'].forEach(function (s) {
+      document.getElementById(s).classList.toggle('active', s === id);
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ---------- Sponsor gate ----------
+  function startGate(sponsor) {
+    var el = document.getElementById('sponsor-content');
+    if (!sponsor) {
+      showScreen('screen-form');
+      return;
+    }
+    var waitSeconds = 8;
+    var html = '';
+    if (sponsor.imageUrl) html += '<img class="sponsor-image" src="' + sponsor.imageUrl + '">';
+    if (sponsor.caption) html += '<p>' + escapeHtml(sponsor.caption) + '</p>';
+    html += '<div class="timer" id="gate-timer">' + waitSeconds + '</div>';
+    html += '<button id="btn-continue" disabled>Continue</button>';
+    el.innerHTML = html;
+
+    if (sponsor.linkUrl) {
+      var img = el.querySelector('.sponsor-image');
+      if (img) {
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', function () { window.open(sponsor.linkUrl, '_blank'); });
+      }
+    }
+
+    var remaining = waitSeconds;
+    var timerEl = document.getElementById('gate-timer');
+    var btn = document.getElementById('btn-continue');
+    var interval = setInterval(function () {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        timerEl.textContent = '';
+        btn.disabled = false;
+        btn.textContent = 'Continue';
+      } else {
+        timerEl.textContent = remaining;
+      }
+    }, 1000);
+
+    btn.addEventListener('click', function () { showScreen('screen-form'); });
+  }
+
+  callApi('getActiveSponsorMessage', {}, function (sponsor) {
+    startGate(sponsor);
+    showScreen('screen-gate');
+  }, function () {
+    // If we can't even check for a sponsor message, don't block anyone -
+    // just let them through to the form.
+    showScreen('screen-form');
+  });
+
+  // ---------- Multi-part testimony builder ----------
+  function updateWordCount() {
+    var text = document.getElementById('part-text').value;
+    var words = countWords(text);
+    var el = document.getElementById('word-count');
+    el.textContent = words + ' / ' + MAX_WORDS + ' words';
+    el.className = 'word-count' + (words > MAX_WORDS ? ' over' : '');
+  }
+  document.getElementById('part-text').addEventListener('input', updateWordCount);
+
+  function renderSavedParts() {
+    var el = document.getElementById('saved-parts');
+    el.innerHTML = savedParts.map(function (p, i) {
+      return '<div class="part-item"><div class="part-num">Part ' + (i + 1) + '</div>' +
+        escapeHtml(p) + '<a href="#" class="remove-part" data-remove="' + i + '">Remove</a></div>';
+    }).join('');
+    document.getElementById('current-part-num').textContent = Math.min(savedParts.length + 1, MAX_PARTS);
+    document.getElementById('btn-save-part').style.display = savedParts.length >= MAX_PARTS ? 'none' : 'block';
+  }
+
+  document.getElementById('saved-parts').addEventListener('click', function (e) {
+    var rm = e.target.closest('[data-remove]');
+    if (!rm) return;
+    e.preventDefault();
+    savedParts.splice(Number(rm.dataset.remove), 1);
+    renderSavedParts();
+  });
+
+  document.getElementById('btn-save-part').addEventListener('click', function () {
+    var text = document.getElementById('part-text').value.trim();
+    if (!text) { alert('Write something first.'); return; }
+    if (countWords(text) > MAX_WORDS) { alert('This part is over ' + MAX_WORDS + ' words - please shorten it.'); return; }
+    if (savedParts.length >= MAX_PARTS) { alert('You have reached the maximum of ' + MAX_PARTS + ' parts.'); return; }
+    savedParts.push(text);
+    document.getElementById('part-text').value = '';
+    updateWordCount();
+    renderSavedParts();
+  });
+
+  document.getElementById('btn-submit-testimony').addEventListener('click', function () {
+    var msg = document.getElementById('submit-msg');
+    var currentText = document.getElementById('part-text').value.trim();
+    var parts = savedParts.slice();
+
+    if (currentText) {
+      if (countWords(currentText) > MAX_WORDS) { msg.className = 'msg bad'; msg.textContent = 'Your current part is over ' + MAX_WORDS + ' words - please shorten it or save it first.'; return; }
+      if (parts.length >= MAX_PARTS) { msg.className = 'msg bad'; msg.textContent = 'You have reached the maximum of ' + MAX_PARTS + ' parts - remove one before adding more.'; return; }
+      parts.push(currentText);
+    }
+
+    if (!parts.length) { msg.className = 'msg bad'; msg.textContent = 'Please write your story before submitting.'; return; }
+
+    var btn = this;
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    msg.className = 'msg'; msg.textContent = '';
+    var contactInfo = document.getElementById('contact-info').value.trim();
+
+    callApi('submitTestimony', { parts: parts, contactInfo: contactInfo }, function () {
+      showScreen('screen-success');
+    }, function (err) {
+      btn.disabled = false; btn.textContent = 'Submit my testimony';
+      msg.className = 'msg bad'; msg.textContent = err.message;
+    });
+  });
+
+  renderSavedParts();
+})();
+</script>
+</body>
+</html>
