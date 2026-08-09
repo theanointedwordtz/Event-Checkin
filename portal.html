@@ -160,9 +160,11 @@
   }
 
   callApi('getActiveSponsorMessage', {}, function (sponsor) {
+    console.log('Sponsor check result:', sponsor);
     startGate(sponsor);
     showScreen('screen-gate');
-  }, function () {
+  }, function (err) {
+    console.error('Sponsor check failed:', err);
     // If we can't even check for a sponsor message, don't block anyone -
     // just let them through to the form.
     showScreen('screen-form');
