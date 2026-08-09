@@ -32,10 +32,12 @@
   #screen-success.active { display: block; }
   #screen-form.hidden { display: none; }
 
-  /* Permanent ad slideshow block */
-  .ad-slideshow { padding: 0; overflow: hidden; min-height: 60px; display: flex; align-items: center; justify-content: center; }
+  /* Permanent ad slideshow block - always visible, cycles through
+     every active sponsor message, never gates access to the form. Shows
+     a friendly placeholder when there's nothing active to show. */
+  .ad-slideshow { padding: 0; overflow: hidden; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .ad-slide-image { width: 100%; display: block; border-radius: 8px 8px 0 0; cursor: default; }
-  .ad-slide-caption { padding: 10px 16px; font-size: 13px; color: #444; margin: 0; }
+  .ad-slide-caption { padding: 12px 16px; font-size: 14px; font-weight: 600; color: #1d2327; margin: 0; width: 100%; background: #f7f7f5; text-align: center; }
   .ad-slide-dots { text-align: center; padding: 8px 0 12px; }
   .ad-slide-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ccc; margin: 0 3px; }
   .ad-slide-dots span.on { background: #1d2327; }
@@ -80,6 +82,11 @@
 <script>
 (function () {
   // ---------- CONFIG ----------
+  // Your deployed Apps Script Web App URL (the .../exec one) - update
+  // this if you ever redeploy and get a new URL. No secret/API key goes
+  // here - submitTestimony/getActiveSponsorMessages are deliberately
+  // public actions on the backend (see Code.gs), so there's nothing
+  // sensitive in this file, safe to host publicly on GitHub Pages.
   var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyqR-GIHgXZZiNh60BicrmapxxeV5lVvRim1D5gPF24Amvo8dVrc1_OWYgdpjiidAf6/exec';
 
   var MAX_PARTS = 17;
@@ -87,20 +94,23 @@
   var savedParts = [];
   var SLIDE_INTERVAL_MS = 5000;
 
-  // FIXED: Removed custom headers and used URLSearchParams. 
-  // This forces the browser to treat it as a standard form, bypassing all CORS NetworkErrors.
+  // application/x-www-form-urlencoded is one of the CORS "simple"
+  // content types (no preflight OPTIONS request needed, same as
+  // text/plain), but unlike a raw JSON text body, Apps Script parses
+  // this natively into e.parameter - which survives the redirect Apps
+  // Script's own /exec URL always issues far more reliably than a raw
+  // POST body seems to (see Code.gs's e.parameter.payload fallback).
   function callApi(action, data, onSuccess, onError) {
-    var formData = new URLSearchParams();
-    formData.append('payload', JSON.stringify({ action: action, data: data || {} }));
-
+    var payload = JSON.stringify({ action: action, data: data || {} });
     fetch(WEB_APP_URL, {
       method: 'POST',
-      body: formData
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'payload=' + encodeURIComponent(payload)
     })
       .then(function (res) { return res.json(); })
       .then(function (json) {
         if (json.ok) onSuccess(json.result);
-        else onError(new Error(json.error || 'Something went wrong on the server.'));
+        else onError(new Error(json.error || 'Something went wrong.'));
       })
       .catch(function (err) { onError(err); });
   }
@@ -115,21 +125,56 @@
     });
   }
 
-  // ---------- Ad Fetching matched to Backend ----------
-  // Updated to use 'getPortalAd' so it correctly pulls from your new Admin Dashboard Settings
-  callApi('getPortalAd', {}, function (res) {
-    var topContainer = document.getElementById('ad-slideshow-top');
-    var bottomContainer = document.getElementById('ad-slideshow-bottom');
-    
-    if (res && res.adContent) {
-      topContainer.innerHTML = res.adContent;
-      bottomContainer.innerHTML = res.adContent;
-    } else {
-      topContainer.innerHTML = '<p class="ad-slide-empty">Welcome! Go ahead and share your testimony below!</p>';
+  // ---------- Non-blocking ad slideshow ----------
+  function initAdSlideshow(containerId, sponsors) {
+    var container = document.getElementById(containerId);
+    if (!sponsors || !sponsors.length) {
+      container.innerHTML = '<p class="ad-slide-empty">No ad right now - go ahead and share your testimony below!</p>';
+      return;
     }
+    var index = 0;
+
+    function render() {
+      var s = sponsors[index];
+      var html = '';
+      if (s.adType === 'html' && s.htmlContent) {
+        // Admin-authored content only (never from anonymous testimony
+        // submitters) - safe to render as-is, it's trusted, not
+        // third-party input.
+        html += s.htmlContent;
+      } else {
+        if (s.imageUrl) html += '<img class="ad-slide-image" src="' + s.imageUrl + '">';
+        if (s.caption) html += '<p class="ad-slide-caption">' + escapeHtml(s.caption) + '</p>';
+      }
+      if (sponsors.length > 1) {
+        html += '<div class="ad-slide-dots">' + sponsors.map(function (_, i) {
+          return '<span class="' + (i === index ? 'on' : '') + '"></span>';
+        }).join('') + '</div>';
+      }
+      container.innerHTML = html;
+      var img = container.querySelector('.ad-slide-image');
+      if (img && s.linkUrl) {
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', function () { window.open(s.linkUrl, '_blank'); });
+      }
+    }
+
+    render();
+    if (sponsors.length > 1) {
+      setInterval(function () {
+        index = (index + 1) % sponsors.length;
+        render();
+      }, SLIDE_INTERVAL_MS);
+    }
+  }
+
+  callApi('getActiveSponsorMessages', {}, function (sponsors) {
+    initAdSlideshow('ad-slideshow-top', sponsors);
+    initAdSlideshow('ad-slideshow-bottom', sponsors);
   }, function (err) {
-    console.error('Ad load failed:', err);
-    document.getElementById('ad-slideshow-top').innerHTML = '<p class="ad-slide-empty">Welcome! Go ahead and share your testimony below.</p>';
+    console.error('Sponsor slideshow load failed:', err);
+    initAdSlideshow('ad-slideshow-top', []);
+    initAdSlideshow('ad-slideshow-bottom', []);
   });
 
   // ---------- Multi-part testimony builder ----------
@@ -189,8 +234,7 @@
     msg.className = 'msg'; msg.textContent = '';
     var contactInfo = document.getElementById('contact-info').value.trim();
 
-    // FIXED: Updated payload to match backend expecting 'storyParts'
-    callApi('submitTestimony', { storyParts: parts, contactInfo: contactInfo }, function () {
+    callApi('submitTestimony', { parts: parts, contactInfo: contactInfo }, function () {
       document.getElementById('screen-form').classList.add('hidden');
       document.getElementById('screen-success').classList.add('active');
     }, function (err) {
