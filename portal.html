@@ -15,7 +15,7 @@
   p.description { color: #666; font-size: 13px; margin: 4px 0 16px; }
   
   /* Ad Section */
-  .ad-container { background: #e2e4e7; border-radius: 8px; min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 16px; text-align: center; font-size: 14px; color: #1d2327; padding: 10px; }
+  .ad-container { background: #e2e4e7; border-radius: 8px; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 16px; text-align: center; font-size: 14px; color: #1d2327; padding: 10px; }
   .ad-container img { max-width: 100%; max-height: 230px; border-radius: 4px; }
   .timer-text { font-weight: bold; color: #d63638; margin-top: 10px; text-align: center; }
   
@@ -47,7 +47,7 @@
   <div class="card" id="ad-section">
     <h2>A word from our sponsors</h2>
     <div class="ad-container" id="ad-content-box">
-      Loading...
+      Loading sponsor message...
     </div>
     <div class="timer-text" id="ad-timer">You can begin writing in 10 seconds...</div>
     <button id="btn-start-writing" disabled>Start Writing</button>
@@ -80,8 +80,8 @@
 (function() {
   // ======================================================================
   // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
-  // IMPORTANT: Ensure it ends in "/exec"
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyqR-GIHgXZZiNh60BicrmapxxeV5lVvRim1D5gPF24Amvo8dVrc1_OWYgdpjiidAf6/exec"; 
+  // MUST END IN "/exec"
+  const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE"; 
   // ======================================================================
 
   const AD_TIMER_SECONDS = 10;
@@ -91,22 +91,23 @@
   let currentParts = [];
   let timeLeft = AD_TIMER_SECONDS;
 
-  // --- 1. Fetch Ad Content safely via URL parameters ---
-  const getAdUrl = WEB_APP_URL + (WEB_APP_URL.includes('?') ? '&' : '?') + 'action=getPortalAd';
-  
-  fetch(getAdUrl)
-  .then(res => res.json())
-  .then(data => {
-    if (data.ok && data.result && data.result.adContent) {
-      document.getElementById('ad-content-box').innerHTML = data.result.adContent;
-    } else {
-      document.getElementById('ad-content-box').innerHTML = "<h3>Welcome!</h3><p>Share your story below.</p>";
-    }
-  })
-  .catch(err => {
-    console.error("Ad load failed:", err);
-    document.getElementById('ad-content-box').innerHTML = "<h3>Welcome!</h3><p>Share your story below.</p>";
-  });
+  // --- 1. Fetch Ad Content on Load ---
+  const adApiUrl = WEB_APP_URL + (WEB_APP_URL.includes('?') ? '&' : '?') + 'action=getPortalAd';
+  fetch(adApiUrl)
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.result && data.result.adContent) {
+        document.getElementById('ad-content-box').innerHTML = data.result.adContent;
+      } else if (data && data.adContent) {
+        document.getElementById('ad-content-box').innerHTML = data.adContent;
+      } else {
+        document.getElementById('ad-content-box').innerHTML = "<h3>Welcome!</h3><p>Share your story with us today.</p>";
+      }
+    })
+    .catch(err => {
+      console.error("Ad load error:", err);
+      document.getElementById('ad-content-box').innerHTML = "<h3>Welcome!</h3><p>Share your story with us today.</p>";
+    });
 
   // --- 2. Ad Timer Logic ---
   const timerText = document.getElementById('ad-timer');
@@ -177,7 +178,7 @@
     updateIndicator();
   });
 
-  // --- 5. Final Submission (Secure POST) ---
+  // --- 5. Final Submission ---
   btnSubmit.addEventListener('click', () => {
     const text = textarea.value.trim();
     if (text) {
@@ -191,7 +192,7 @@
     btnSavePart.disabled = true;
     btnSubmit.textContent = "Submitting...";
     
-    // Using simple text/plain to avoid Google CORS pre-flight blocks
+    // Simple text/plain POST payload avoids CORS preflight OPTIONS blocking
     fetch(WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -206,7 +207,7 @@
         document.getElementById('story-section').style.display = 'none';
         document.getElementById('success-section').style.display = 'block';
       } else {
-        throw new Error(data.error || "Submission failed inside server.");
+        throw new Error(data.error || "Submission failed on server");
       }
     })
     .catch(err => {
@@ -219,3 +220,5 @@
   });
 })();
 </script>
+</body>
+</html>
