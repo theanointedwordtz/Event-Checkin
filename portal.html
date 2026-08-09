@@ -192,11 +192,12 @@
     // Post to Google Apps Script
     fetch(WEB_APP_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      redirect: 'follow', // Ensures it follows Apps Script redirects securely
-      body: JSON.stringify({
-        action: 'submitTestimony',
-        data: { storyParts: currentParts }
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        payload: JSON.stringify({
+          action: 'submitTestimony',
+          data: { storyParts: currentParts }
+        })
       })
     })
     .then(res => res.json())
@@ -215,6 +216,3 @@
       btnSubmit.disabled = false;
       btnSubmit.textContent = "Submit Testimony";
     });
-  });
-})();
-</script>
