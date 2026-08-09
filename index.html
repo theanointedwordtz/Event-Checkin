@@ -94,15 +94,18 @@
   var savedParts = [];
   var SLIDE_INTERVAL_MS = 5000;
 
-  // text/plain avoids a CORS preflight (OPTIONS) request, which Apps
-  // Script's web app doesn't handle - the backend still reads and
-  // JSON.parses the raw body correctly regardless of the declared
-  // content-type.
+  // application/x-www-form-urlencoded is one of the CORS "simple"
+  // content types (no preflight OPTIONS request needed, same as
+  // text/plain), but unlike a raw JSON text body, Apps Script parses
+  // this natively into e.parameter - which survives the redirect Apps
+  // Script's own /exec URL always issues far more reliably than a raw
+  // POST body seems to (see Code.gs's e.parameter.payload fallback).
   function callApi(action, data, onSuccess, onError) {
+    var payload = JSON.stringify({ action: action, data: data || {} });
     fetch(WEB_APP_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, data: data || {} })
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'payload=' + encodeURIComponent(payload)
     })
       .then(function (res) { return res.json(); })
       .then(function (json) {
