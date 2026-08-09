@@ -82,11 +82,6 @@
 <script>
 (function () {
   // ---------- CONFIG ----------
-  // Your deployed Apps Script Web App URL (the .../exec one) - update
-  // this if you ever redeploy and get a new URL. No secret/API key goes
-  // here - submitTestimony/getActiveSponsorMessages are deliberately
-  // public actions on the backend (see Code.gs), so there's nothing
-  // sensitive in this file, safe to host publicly on GitHub Pages.
   var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbybpnMzJ44I1NTamOohSt4RLoc0LRT2a2IG3paWT7CHdPKiV2SgP7gDDl1GYtSWnFmv/exec';
 
   var MAX_PARTS = 17;
@@ -94,15 +89,14 @@
   var savedParts = [];
   var SLIDE_INTERVAL_MS = 5000;
 
-  // text/plain avoids a CORS preflight (OPTIONS) request, which Apps
-  // Script's web app doesn't handle - the backend still reads and
-  // JSON.parses the raw body correctly regardless of the declared
-  // content-type.
+  // FIXED callApi Function: Uses application/x-www-form-urlencoded to completely bypass CORS / "Failed to fetch" errors.
   function callApi(action, data, onSuccess, onError) {
     fetch(WEB_APP_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, data: data || {} })
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        payload: JSON.stringify({ action: action, data: data || {} })
+      })
     })
       .then(function (res) { return res.json(); })
       .then(function (json) {
