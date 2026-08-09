@@ -79,8 +79,7 @@
 <script>
 (function() {
   // ======================================================================
-  // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
-  // MUST END IN "/exec"
+  // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE (MUST END IN /exec)
   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyqR-GIHgXZZiNh60BicrmapxxeV5lVvRim1D5gPF24Amvo8dVrc1_OWYgdpjiidAf6/exec"; 
   // ======================================================================
 
@@ -98,8 +97,6 @@
     .then(data => {
       if (data && data.result && data.result.adContent) {
         document.getElementById('ad-content-box').innerHTML = data.result.adContent;
-      } else if (data && data.adContent) {
-        document.getElementById('ad-content-box').innerHTML = data.adContent;
       } else {
         document.getElementById('ad-content-box').innerHTML = "<h3>Welcome!</h3><p>Share your story with us today.</p>";
       }
@@ -192,7 +189,6 @@
     btnSavePart.disabled = true;
     btnSubmit.textContent = "Submitting...";
     
-    // Simple text/plain POST payload avoids CORS preflight OPTIONS blocking
     fetch(WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -203,11 +199,11 @@
     })
     .then(res => res.json())
     .then(data => {
-      if (data.ok) {
+      if (data && data.ok) {
         document.getElementById('story-section').style.display = 'none';
         document.getElementById('success-section').style.display = 'block';
       } else {
-        throw new Error(data.error || "Submission failed on server");
+        throw new Error((data && data.error) ? data.error : "Submission failed on server");
       }
     })
     .catch(err => {
