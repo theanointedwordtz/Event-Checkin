@@ -71,7 +71,7 @@
   <!-- SUCCESS SECTION -->
   <div class="card" id="success-section" style="text-align: center;">
     <h2 style="color: #00a32a;">✓ Story Submitted!</h2>
-    <p class="description">Thank you for sharing your testimony.</p>
+    <p class="description">Thank you for sharing your testimony. It will be reviewed and paired with biblical advice.</p>
     <button class="secondary" onclick="window.location.reload();">Submit Another</button>
   </div>
 </main>
@@ -189,7 +189,7 @@
     btnSavePart.disabled = true;
     btnSubmit.textContent = "Submitting...";
     
-    // Post to Google Apps Script
+    // Post to Google Apps Script using URLSearchParams to fix CORS/redirect dropping data
     fetch(WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -216,3 +216,8 @@
       btnSubmit.disabled = false;
       btnSubmit.textContent = "Submit Testimony";
     });
+  });
+})();
+</script>
+</body>
+</html>
