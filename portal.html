@@ -1,239 +1,218 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Share Your Testimony - Anointed Word</title>
+<title>Share Your Testimony</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: #f3f2f1; color: #1d2327; }
-  header { background: #1d2327; color: #fff; padding: 20px; text-align: center; }
-  header h1 { font-size: 20px; margin: 0; }
-  header p { font-size: 13px; color: #cbd0d3; margin: 6px 0 0; }
-  main { max-width: 480px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { background: #1d2327; color: #fff; padding: 16px 24px; text-align: center; }
+  header h1 { font-size: 18px; margin: 0; }
+  main { max-width: 600px; margin: 0 auto; padding: 20px; }
   .card { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
   h2 { margin-top: 0; font-size: 17px; }
-  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
-  textarea, input[type=text] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
-  textarea { resize: vertical; }
-  button { background: #1d2327; color: #fff; border: none; padding: 12px 18px; border-radius: 6px; font-size: 15px; cursor: pointer; margin-top: 12px; width: 100%; }
+  p.description { color: #666; font-size: 13px; margin: 4px 0 16px; }
+  
+  /* Ad Section */
+  .ad-container { background: #e2e4e7; border-radius: 8px; min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 16px; text-align: center; font-size: 14px; color: #1d2327; padding: 10px; }
+  .ad-container img { max-width: 100%; max-height: 230px; border-radius: 4px; }
+  .timer-text { font-weight: bold; color: #d63638; margin-top: 10px; text-align: center; }
+  
+  /* Form Elements */
+  textarea { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; resize: vertical; font-family: inherit; }
+  .word-counter { font-size: 12px; color: #666; margin-top: 6px; text-align: right; }
+  .word-counter.over-limit { color: #d63638; font-weight: bold; }
+  
+  button { background: #1d2327; color: #fff; border: none; padding: 12px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: 600; }
   button.secondary { background: #e2e4e7; color: #1d2327; }
-  button:disabled { background: #ccc; cursor: default; }
-  .word-count { font-size: 12px; color: #666; text-align: right; margin-top: 4px; }
-  .word-count.over { color: #d63638; font-weight: 600; }
-  .msg { margin-top: 10px; font-size: 13px; white-space: pre-line; }
-  .msg.bad { color: #d63638; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  
+  .part-indicator { background: #edfaef; color: #00a32a; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 16px; display: none; border: 1px solid #00a32a; }
+  .msg { margin-top: 10px; font-size: 13px; text-align: center; }
   .msg.ok { color: #00a32a; }
-  .description { color: #666; font-size: 12px; margin: 2px 0 8px; }
-  .part-item { border: 1px solid #eee; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; position: relative; }
-  .part-item .part-num { font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
-  .part-item .remove-part { position: absolute; top: 8px; right: 10px; color: #d63638; text-decoration: none; font-size: 12px; }
-  #screen-success { display: none; }
-  #screen-success.active { display: block; }
-  #screen-form.hidden { display: none; }
-
-  /* Permanent ad slideshow block - always visible, cycles through
-     every active sponsor message, never gates access to the form. Shows
-     a friendly placeholder when there's nothing active to show. */
-  .ad-slideshow { padding: 0; overflow: hidden; min-height: 60px; display: flex; align-items: center; justify-content: center; }
-  .ad-slide-image { width: 100%; display: block; border-radius: 8px 8px 0 0; cursor: default; }
-  .ad-slide-caption { padding: 10px 16px; font-size: 13px; color: #444; margin: 0; }
-  .ad-slide-dots { text-align: center; padding: 8px 0 12px; }
-  .ad-slide-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ccc; margin: 0 3px; }
-  .ad-slide-dots span.on { background: #1d2327; }
-  .ad-slide-empty { padding: 20px; text-align: center; color: #999; font-size: 13px; width: 100%; margin: 0; }
+  .msg.bad { color: #d63638; }
+  
+  #story-section, #success-section { display: none; }
 </style>
 </head>
 <body>
+
 <header>
-  <h1>&#10013; Share Your Testimony</h1>
-  <p>Anointed Word - Events</p>
+  <h1>Share Your Testimony</h1>
 </header>
+
 <main>
+  <!-- ADVERTISEMENT SECTION -->
+  <div class="card" id="ad-section">
+    <h2>A word from our sponsors</h2>
+    <div class="ad-container" id="ad-content-box">
+      Loading...
+    </div>
+    <div class="timer-text" id="ad-timer">You can begin writing in 5 seconds...</div>
+    <button id="btn-start-writing" disabled>Start Writing</button>
+  </div>
 
-  <div class="card ad-slideshow" id="ad-slideshow-top"></div>
+  <!-- STORY WRITING SECTION -->
+  <div class="card" id="story-section">
+    <h2>Your Story (Anonymous)</h2>
+    <p class="description">Share your testimony or God-related story. Maximum 300 words per section. You can add up to 17 sections.</p>
+    
+    <div class="part-indicator" id="part-indicator">Saved: 0 / 17 parts</div>
 
-  <div class="card" id="screen-form">
-    <h2>Tell your story</h2>
-    <p class="description">Write in as many parts as you need (up to 17), 300 words or fewer each. Your testimony is shared anonymously unless you choose to leave contact info below.</p>
+    <textarea id="story-text" rows="8" placeholder="Type your story here..."></textarea>
+    <div class="word-counter" id="word-counter">0 / 300 words</div>
 
-    <label>Your story - part <span id="current-part-num">1</span></label>
-    <textarea id="part-text" rows="8" placeholder="Write here..."></textarea>
-    <div class="word-count" id="word-count">0 / 300 words</div>
-    <button class="secondary" id="btn-save-part">Save this part &amp; write another</button>
-
-    <div id="saved-parts"></div>
-
-    <label>Contact info (optional - only if you'd like us to be able to reach you)</label>
-    <input type="text" id="contact-info" placeholder="Email or phone number">
-
-    <button id="btn-submit-testimony">Submit my testimony</button>
+    <button id="btn-save-part" class="secondary">Save & Add Another Part</button>
+    <button id="btn-submit-final">Submit Testimony</button>
     <div class="msg" id="submit-msg"></div>
   </div>
 
-  <div class="card ad-slideshow" id="ad-slideshow-bottom"></div>
-
-  <div class="card" id="screen-success">
-    <h2>&#10003; Thank you</h2>
-    <p>Your testimony has been received. Thank you for sharing your story with us.</p>
+  <!-- SUCCESS SECTION -->
+  <div class="card" id="success-section" style="text-align: center;">
+    <h2 style="color: #00a32a;">✓ Story Submitted!</h2>
+    <p class="description">Thank you for sharing your testimony. It will be reviewed and paired with biblical advice.</p>
+    <button class="secondary" onclick="window.location.reload();">Submit Another</button>
   </div>
-
 </main>
+
 <script>
-(function () {
-  // ---------- CONFIG ----------
-  // Your deployed Apps Script Web App URL (the .../exec one) - update
-  // this if you ever redeploy and get a new URL. No secret/API key goes
-  // here - submitTestimony/getActiveSponsorMessages are deliberately
-  // public actions on the backend (see Code.gs), so there's nothing
-  // sensitive in this file, safe to host publicly on GitHub Pages.
-  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbybpnMzJ44I1NTamOohSt4RLoc0LRT2a2IG3paWT7CHdPKiV2SgP7gDDl1GYtSWnFmv/exec';
+(function() {
+  // ======================================================================
+  // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyqR-GIHgXZZiNh60BicrmapxxeV5lVvRim1D5gPF24Amvo8dVrc1_OWYgdpjiidAf6/exec"; 
+  // ======================================================================
 
-  var MAX_PARTS = 17;
-  var MAX_WORDS = 300;
-  var savedParts = [];
-  var SLIDE_INTERVAL_MS = 5000;
+  const AD_TIMER_SECONDS = 5;
+  const MAX_WORDS = 300;
+  const MAX_PARTS = 17;
+  
+  let currentParts = [];
+  let timeLeft = AD_TIMER_SECONDS;
 
-  // text/plain avoids a CORS preflight (OPTIONS) request, which Apps
-  // Script's web app doesn't handle - the backend still reads and
-  // JSON.parses the raw body correctly regardless of the declared
-  // content-type.
-  function callApi(action, data, onSuccess, onError) {
+  // --- 1. Fetch Ad Content on Load ---
+  fetch(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Prevents CORS preflight issues
+    body: JSON.stringify({ action: 'getPortalAd' })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok && data.result.adContent) {
+      document.getElementById('ad-content-box').innerHTML = data.result.adContent;
+    }
+  })
+  .catch(err => console.error("Ad load failed", err));
+
+  // --- 2. Ad Timer Logic ---
+  const timerText = document.getElementById('ad-timer');
+  const btnStart = document.getElementById('btn-start-writing');
+  
+  const timerInterval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft > 0) {
+      timerText.textContent = `You can begin writing in ${timeLeft} seconds...`;
+    } else {
+      clearInterval(timerInterval);
+      timerText.style.display = 'none';
+      btnStart.disabled = false;
+      btnStart.textContent = "Continue to Write";
+    }
+  }, 1000);
+
+  btnStart.addEventListener('click', () => {
+    document.getElementById('ad-section').style.display = 'none';
+    document.getElementById('story-section').style.display = 'block';
+  });
+
+  // --- 3. Word Counter Logic ---
+  const textarea = document.getElementById('story-text');
+  const counter = document.getElementById('word-counter');
+  const btnSavePart = document.getElementById('btn-save-part');
+  const btnSubmit = document.getElementById('btn-submit-final');
+
+  function getWordCount(text) {
+    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  }
+
+  textarea.addEventListener('input', () => {
+    const count = getWordCount(textarea.value);
+    counter.textContent = `${count} / ${MAX_WORDS} words`;
+    
+    if (count > MAX_WORDS) {
+      counter.classList.add('over-limit');
+      btnSavePart.disabled = true;
+      btnSubmit.disabled = true;
+    } else {
+      counter.classList.remove('over-limit');
+      btnSavePart.disabled = (count === 0 && currentParts.length === 0);
+      btnSubmit.disabled = (count === 0 && currentParts.length === 0);
+    }
+  });
+
+  // --- 4. Multi-Part Save Logic ---
+  const partIndicator = document.getElementById('part-indicator');
+
+  function updateIndicator() {
+    partIndicator.style.display = 'block';
+    partIndicator.textContent = `Saved: ${currentParts.length} / ${MAX_PARTS} parts`;
+    if (currentParts.length >= MAX_PARTS) {
+      textarea.disabled = true;
+      textarea.placeholder = "Maximum parts reached. Please submit.";
+      btnSavePart.style.display = 'none';
+    }
+  }
+
+  btnSavePart.addEventListener('click', () => {
+    const text = textarea.value.trim();
+    if (!text) return;
+    
+    currentParts.push(text);
+    textarea.value = '';
+    textarea.dispatchEvent(new Event('input'));
+    updateIndicator();
+  });
+
+  // --- 5. Final Submission ---
+  btnSubmit.addEventListener('click', () => {
+    const text = textarea.value.trim();
+    if (text) {
+      currentParts.push(text);
+      textarea.value = '';
+    }
+
+    if (currentParts.length === 0) return;
+
+    btnSubmit.disabled = true;
+    btnSavePart.disabled = true;
+    btnSubmit.textContent = "Submitting...";
+    
+    // Post to Google Apps Script
     fetch(WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, data: data || {} })
-    })
-      .then(function (res) { return res.json(); })
-      .then(function (json) {
-        if (json.ok) onSuccess(json.result);
-        else onError(new Error(json.error || 'Something went wrong.'));
+      body: JSON.stringify({
+        action: 'submitTestimony',
+        data: { storyParts: currentParts }
       })
-      .catch(function (err) { onError(err); });
-  }
-
-  function countWords(text) {
-    return (text || '').trim().split(/\s+/).filter(Boolean).length;
-  }
-
-  function escapeHtml(str) {
-    return String(str || '').replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-
-  // ---------- Non-blocking ad slideshow ----------
-  function initAdSlideshow(containerId, sponsors) {
-    var container = document.getElementById(containerId);
-    if (!sponsors || !sponsors.length) {
-      container.innerHTML = '<p class="ad-slide-empty">No ad right now - go ahead and share your testimony below!</p>';
-      return;
-    }
-    var index = 0;
-
-    function render() {
-      var s = sponsors[index];
-      var html = '';
-      if (s.imageUrl) html += '<img class="ad-slide-image" src="' + s.imageUrl + '">';
-      if (s.caption) html += '<p class="ad-slide-caption">' + escapeHtml(s.caption) + '</p>';
-      if (sponsors.length > 1) {
-        html += '<div class="ad-slide-dots">' + sponsors.map(function (_, i) {
-          return '<span class="' + (i === index ? 'on' : '') + '"></span>';
-        }).join('') + '</div>';
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        document.getElementById('story-section').style.display = 'none';
+        document.getElementById('success-section').style.display = 'block';
+      } else {
+        throw new Error(data.error || "Submission failed");
       }
-      container.innerHTML = html;
-      var img = container.querySelector('.ad-slide-image');
-      if (img && s.linkUrl) {
-        img.style.cursor = 'pointer';
-        img.addEventListener('click', function () { window.open(s.linkUrl, '_blank'); });
-      }
-    }
-
-    render();
-    if (sponsors.length > 1) {
-      setInterval(function () {
-        index = (index + 1) % sponsors.length;
-        render();
-      }, SLIDE_INTERVAL_MS);
-    }
-  }
-
-  callApi('getActiveSponsorMessages', {}, function (sponsors) {
-    initAdSlideshow('ad-slideshow-top', sponsors);
-    initAdSlideshow('ad-slideshow-bottom', sponsors);
-  }, function (err) {
-    console.error('Sponsor slideshow load failed:', err);
-    initAdSlideshow('ad-slideshow-top', []);
-    initAdSlideshow('ad-slideshow-bottom', []);
-  });
-
-  // ---------- Multi-part testimony builder ----------
-  function updateWordCount() {
-    var text = document.getElementById('part-text').value;
-    var words = countWords(text);
-    var el = document.getElementById('word-count');
-    el.textContent = words + ' / ' + MAX_WORDS + ' words';
-    el.className = 'word-count' + (words > MAX_WORDS ? ' over' : '');
-  }
-  document.getElementById('part-text').addEventListener('input', updateWordCount);
-
-  function renderSavedParts() {
-    var el = document.getElementById('saved-parts');
-    el.innerHTML = savedParts.map(function (p, i) {
-      return '<div class="part-item"><div class="part-num">Part ' + (i + 1) + '</div>' +
-        escapeHtml(p) + '<a href="#" class="remove-part" data-remove="' + i + '">Remove</a></div>';
-    }).join('');
-    document.getElementById('current-part-num').textContent = Math.min(savedParts.length + 1, MAX_PARTS);
-    document.getElementById('btn-save-part').style.display = savedParts.length >= MAX_PARTS ? 'none' : 'block';
-  }
-
-  document.getElementById('saved-parts').addEventListener('click', function (e) {
-    var rm = e.target.closest('[data-remove]');
-    if (!rm) return;
-    e.preventDefault();
-    savedParts.splice(Number(rm.dataset.remove), 1);
-    renderSavedParts();
-  });
-
-  document.getElementById('btn-save-part').addEventListener('click', function () {
-    var text = document.getElementById('part-text').value.trim();
-    if (!text) { alert('Write something first.'); return; }
-    if (countWords(text) > MAX_WORDS) { alert('This part is over ' + MAX_WORDS + ' words - please shorten it.'); return; }
-    if (savedParts.length >= MAX_PARTS) { alert('You have reached the maximum of ' + MAX_PARTS + ' parts.'); return; }
-    savedParts.push(text);
-    document.getElementById('part-text').value = '';
-    updateWordCount();
-    renderSavedParts();
-  });
-
-  document.getElementById('btn-submit-testimony').addEventListener('click', function () {
-    var msg = document.getElementById('submit-msg');
-    var currentText = document.getElementById('part-text').value.trim();
-    var parts = savedParts.slice();
-
-    if (currentText) {
-      if (countWords(currentText) > MAX_WORDS) { msg.className = 'msg bad'; msg.textContent = 'Your current part is over ' + MAX_WORDS + ' words - please shorten it or save it first.'; return; }
-      if (parts.length >= MAX_PARTS) { msg.className = 'msg bad'; msg.textContent = 'You have reached the maximum of ' + MAX_PARTS + ' parts - remove one before adding more.'; return; }
-      parts.push(currentText);
-    }
-
-    if (!parts.length) { msg.className = 'msg bad'; msg.textContent = 'Please write your story before submitting.'; return; }
-
-    var btn = this;
-    btn.disabled = true; btn.textContent = 'Submitting...';
-    msg.className = 'msg'; msg.textContent = '';
-    var contactInfo = document.getElementById('contact-info').value.trim();
-
-    callApi('submitTestimony', { parts: parts, contactInfo: contactInfo }, function () {
-      document.getElementById('screen-form').classList.add('hidden');
-      document.getElementById('screen-success').classList.add('active');
-    }, function (err) {
-      btn.disabled = false; btn.textContent = 'Submit my testimony';
-      msg.className = 'msg bad'; msg.textContent = err.message;
+    })
+    .catch(err => {
+      const msg = document.getElementById('submit-msg');
+      msg.className = 'msg bad';
+      msg.textContent = "Error: " + err.message;
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = "Submit Testimony";
     });
   });
-
-  renderSavedParts();
 })();
 </script>
 </body>
